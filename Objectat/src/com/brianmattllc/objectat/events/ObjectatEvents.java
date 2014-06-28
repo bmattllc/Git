@@ -73,7 +73,7 @@ public class ObjectatEvents {
 				}
 			}
 			
-			success = arrayListOfEvents.get(eventIndex).deduplicate(deduplicateEvent);
+			success = deduplicateEvent.deduplicate(event);
 		} else {
 			int newEventIndex = arrayListOfEvents.size();
 			arrayListOfEvents.add(event);

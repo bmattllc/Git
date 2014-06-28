@@ -34,7 +34,7 @@ public class Test {
 				if (cmdArgs[0].equals("add")) {
 					if (cmdArgs[1] != null && cmdArgs[2] != null) {
 						System.out.println("Attempting to add event with key " + cmdArgs[1] + " and description '" + cmdArgs[2] + "'");
-						ObjectatEvent event = new ObjectatEvent();
+						ObjectatEvent event = new ObjectatEvent(logger);
 						event.setKey(cmdArgs[1]);
 						event.setEventDescription(cmdArgs[2]);
 						try {
@@ -47,7 +47,7 @@ public class Test {
 				} else if (cmdArgs[0].equals("remove")) {
 					if (cmdArgs[1] != null) {
 						System.out.println("Removing event with key " + cmdArgs[1]);
-						ObjectatEvent event = new ObjectatEvent();
+						ObjectatEvent event = new ObjectatEvent(logger);
 						event.setKey(cmdArgs[1]);
 						try {
 							e.removeEvent(event);
@@ -70,9 +70,9 @@ public class Test {
 				} else if (cmdArgs[0].equals("get")) {
 					if (cmdArgs[1] != null) {
 						System.out.println("Retrieving event with key " + cmdArgs[1]);
-						ObjectatEvent event = new ObjectatEvent();
+						ObjectatEvent event = new ObjectatEvent(logger);
 						try {
-							e.getEventByKey(cmdArgs[1]);
+							event = e.getEventByKey(cmdArgs[1]);
 							System.out.println("Successfully retrieved event");
 							System.out.println(event.toString());
 						} catch (Exception ex) {

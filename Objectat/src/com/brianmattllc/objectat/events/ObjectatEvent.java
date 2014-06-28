@@ -44,19 +44,22 @@ public class ObjectatEvent {
 		boolean success = false;
 		
 		if (event.isOwned() != this.isOwned()) {
+			this.logger.log(ObjectatLogLevel.DEBUG, "Updating event key " + this.getKey() + " owned from " + this.isOwned() + " to " + event.isOwned());
 			this.setOwned(event.isOwned());
 		}
 		
 		if (!event.getOwnedBy().equals(this.getOwnedBy())) {
+			this.logger.log(ObjectatLogLevel.DEBUG, "Updating event key " + this.getKey() + " owned by from " + this.getOwnedBy() + " to " + event.getOwnedBy());
 			this.setOwnedBy(event.ownedBy);
 		}
 		
 		if (!event.getEventDescription().equals(this.getEventDescription())) {
-			
+			this.logger.log(ObjectatLogLevel.DEBUG, "Updating event key " + this.getKey() + " description from " + this.getEventDescription() + " to " + event.getEventDescription());
 			this.setEventDescription(event.getEventDescription());
 		}
 		
 		if (event.getEventSeverity().getSeverityInteger() != this.getEventSeverity().getSeverityInteger()) {
+			this.logger.log(ObjectatLogLevel.DEBUG, "Updating event key " + this.getKey() + " severity from " + this.getEventSeverity() + " to " + event.getEventSeverity());
 			this.setEventSeverity(event.getEventSeverity());
 		}
 
