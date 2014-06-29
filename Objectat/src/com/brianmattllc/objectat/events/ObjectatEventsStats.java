@@ -1,7 +1,9 @@
 package com.brianmattllc.objectat.events;
 
 import java.util.Date;
+import java.util.TimeZone;
 import java.text.DateFormat;
+
 import com.brianmattllc.objectat.logging.*;
 
 public class ObjectatEventsStats implements Runnable {
@@ -94,6 +96,7 @@ public class ObjectatEventsStats implements Runnable {
 	
 	public String toString() {
 		DateFormat df = DateFormat.getInstance();
+		df.setTimeZone(TimeZone.getTimeZone("GMT"));
 		
 		return "Objectat Events Stats:\n"
 				+ "\tStart Date: " + df.format(this.startDate) + "\n"
