@@ -3,8 +3,14 @@ package com.brianmattllc.objectat.events;
 import java.util.Date;
 import java.util.TimeZone;
 import java.text.DateFormat;
-
 import com.brianmattllc.objectat.logging.*;
+
+/**
+ * @author Brian Matt
+ * 
+ * Statistics class for Objectat.  Currently used to collect data on
+ * ObjectatEvent throughput.
+ */
 
 public class ObjectatEventsStats implements Runnable {
 	private Date startDate = new Date();
@@ -16,9 +22,23 @@ public class ObjectatEventsStats implements Runnable {
 	private Date maxEventsPerSecondDate = new Date();
 	private ObjectatLogger logger;
 	
+	/**
+	 * Constructor for ObjectatEventsStats object.  Takes input of logger
+	 * for logging purposes.
+	 * 
+	 * @param logger
+	 */
+	
 	public ObjectatEventsStats (ObjectatLogger logger) {
 		this.logger = logger;
 	}
+	
+	/**
+	 * run() method for Thread.  This is the main method for this class and
+	 * goes through an essential infinite loop while Objectat is running.  Thread
+	 * sleeps for a duration between each loop to conserve resources, currently
+	 * 10 seconds.
+	 */
 	
 	public void run() {
 		boolean done = false;
@@ -56,22 +76,51 @@ public class ObjectatEventsStats implements Runnable {
 		}
 	}
 	
+	/**
+	 * Calculate current events per second the Objectat is processing.
+	 * Granularity is defined with class, but is currently a 60 second
+	 * sliding window.  Collection happens every 10 seconds.
+	 * 
+	 * @return Double value of current events per second over last 60
+	 * 	seconds.
+	 */
+	
 	public double getCurrentEventsPerSecond () {
+		// Instantiate double value to return
 		double currentEventsPerSecond = 0;
 		
+		// Iterate array of data collected to get sum of events
+		// processed over the last minute
 		for (int i = 0; i < arrayOfEventCounts.length; i++) {
 			currentEventsPerSecond += arrayOfEventCounts[i];
 		}
 		
+		// Divide number of alarms by granularity to get current
+		// event rate.
 		currentEventsPerSecond /= this.granularity;
 		
 		return currentEventsPerSecond;
 	}
 	
+	/**
+	 * Calculate the mean (average) events per second.
+	 * 
+	 * @return Double value of mean events per second the Objectat is processing
+	 */
+	
 	public double getMeanEventsPerSecond () {
+		// Create double to return
 		double meanEventsPerSecond = 0;
+		
+		// Load total number of events processed
 		meanEventsPerSecond = this.eventsProcessed;
+		
+		// Create Date object for current time, to calculate duration
+		// Objectat has been running
 		Date curDate = new Date();
+		
+		// Divide events processed by seconds Objectat has been running
+		// getTime is milliseconds so divide by 1000 to get seconds
 		meanEventsPerSecond /= ((curDate.getTime() - this.startDate.getTime()) / 1000);
 		return meanEventsPerSecond;
 	}
@@ -94,10 +143,18 @@ public class ObjectatEventsStats implements Runnable {
 		this.eventsProcessed = eventsProcessed;
 	}
 	
+	/**
+	 * Convert stats to string, presents printable message to end
+	 * user
+	 */
+	
 	public String toString() {
+		// DateFormat object to make human friendly date
 		DateFormat df = DateFormat.getInstance();
+		// Display times in GMT for portability
 		df.setTimeZone(TimeZone.getTimeZone("GMT"));
 		
+		// Return string of stats
 		return "Objectat Events Stats:\n"
 				+ "\tStart Date: " + df.format(this.startDate) + "\n"
 				+ "\tEvents Processed: " + this.getEventsProcessed() + "\n"

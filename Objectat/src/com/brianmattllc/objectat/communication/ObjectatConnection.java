@@ -1,25 +1,32 @@
 package com.brianmattllc.objectat.communication;
 
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.ObjectOutputStream;
+import java.io.StringWriter;
 import java.net.Socket;
 import java.io.IOException;
+
 import com.brianmattllc.objectat.events.*;
 import com.brianmattllc.objectat.logging.*;
+
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.Marshaller;
+
 import java.io.StringReader;
 import java.util.regex.*;
+import java.util.ArrayList;
 
 public class ObjectatConnection implements Runnable {
 	private Socket client;
-	private OutputStream out;
+	private ObjectOutputStream out;
 	private InputStream in;
 	private String messageBuffer = "";
 	private ObjectatEvents events;
 	private ObjectatLogger logger;
 	private JAXBContext objectatEventJAXBContext;
+	private boolean isEventClient = false;
 	
 	public ObjectatConnection (
 			Socket client, 
@@ -70,6 +77,21 @@ public class ObjectatConnection implements Runnable {
 										this.logger.log(ObjectatLogLevel.ERROR, "Failed to unmarshall XML: " + message + "\n\n");
 										e.printStackTrace();
 									}
+								}
+							} else if (message.equals("CLIENT")) {
+								this.isEventClient = true;
+								ArrayList<ObjectatEvent> allEvents = this.events.getAllEvents();
+								Marshaller marshaller = objectatEventJAXBContext.createMarshaller();
+								marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+								out = (ObjectOutputStream) this.client.getOutputStream();
+								for (int j = 0; j < allEvents.size(); j++) {
+									StringWriter stringWriter = new StringWriter();
+									marshaller.marshal(allEvents.get(j), stringWriter);
+									out.writeObject(
+											ObjectatCommunicationStatics.getStartOfMessage() 
+											+ stringWriter.toString() 
+											+ ObjectatCommunicationStatics.getEndOfMessage()
+									);									
 								}
 							}
 						}
