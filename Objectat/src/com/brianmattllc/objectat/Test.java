@@ -9,6 +9,9 @@ public class Test {
 		ObjectatLogger logger = new ObjectatLogger(ObjectatLogLevel.DEBUG);
 		ObjectatEvents e = new ObjectatEvents(logger);
 		
+		ObjectatSyntheticEventGenerator synE = new ObjectatSyntheticEventGenerator(e, logger);
+		Thread t = new Thread(synE);
+		//t.start();
 		
 		while (true) {
 			System.out.print("> ");

@@ -23,6 +23,7 @@ public class ObjectatEvents {
 	private ArrayList<ObjectatEvent> arrayListOfEvents = new ArrayList<ObjectatEvent>();
 	private HashMap<String,Integer> hashMapOfKeys = new HashMap<String,Integer>();
 	private ObjectatLogger logger;
+	private long eventId = 0;
 	
 	public ObjectatEvents() {
 		this.init();
@@ -75,6 +76,9 @@ public class ObjectatEvents {
 			
 			success = deduplicateEvent.deduplicate(event);
 		} else {
+			event.setFirst(new Date());
+			long thisEventId = ++eventId;
+			event.setEventId(thisEventId);
 			int newEventIndex = arrayListOfEvents.size();
 			arrayListOfEvents.add(event);
 			hashMapOfKeys.put(event.getKey(), newEventIndex);

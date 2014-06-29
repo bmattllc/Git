@@ -31,6 +31,8 @@ public class ObjectatEvent {
 	private ObjectatEventClassification eventClassification = new ObjectatEventClassification();
 	private ObjectatEventSeverity eventSeverity = ObjectatEventSeverity.NORMAL;
 	private ObjectatLogger logger;
+	private int eventCount = 0;
+	private long eventId = 0L;
 	
 	public ObjectatEvent () {
 		
@@ -42,6 +44,12 @@ public class ObjectatEvent {
 	
 	public boolean deduplicate (ObjectatEvent event) {
 		boolean success = false;
+		
+		// Update last timestamp
+		this.setLast(new Date());
+		
+		// Update count
+		this.setEventCount(this.getEventCount() + 1);
 		
 		if (event.isOwned() != this.isOwned()) {
 			this.logger.log(ObjectatLogLevel.DEBUG, "Updating event key " + this.getKey() + " owned from " + this.isOwned() + " to " + event.isOwned());
@@ -183,7 +191,23 @@ public class ObjectatEvent {
 		this.eventSeverity = eventSeverity;
 	}
 	
+	public int getEventCount() {
+		return eventCount;
+	}
+
+	public void setEventCount(int eventCount) {
+		this.eventCount = eventCount;
+	}
+
+	public long getEventId() {
+		return eventId;
+	}
+
+	public void setEventId(long eventId) {
+		this.eventId = eventId;
+	}
+
 	public String toString() {
-		return this.getKey() + ": " + this.getEventDescription();
+		return this.getEventId() + ": " + this.getKey() + ": " + this.getEventDescription();
 	}
 }
