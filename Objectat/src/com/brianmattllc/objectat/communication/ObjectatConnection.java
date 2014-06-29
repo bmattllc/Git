@@ -19,19 +19,26 @@ public class ObjectatConnection implements Runnable {
 	private String messageBuffer = "";
 	private ObjectatEvents events;
 	private ObjectatLogger logger;
+	private JAXBContext objectatEventJAXBContext;
 	
-	public ObjectatConnection (Socket client, ObjectatEvents events, ObjectatLogger logger) {
+	public ObjectatConnection (
+			Socket client, 
+			ObjectatEvents events, 
+			ObjectatLogger logger,
+			JAXBContext objectatEventJAXBContext
+	) {
 		this.client = client;
 		this.events = events;
 		this.logger = logger;
+		this.objectatEventJAXBContext = objectatEventJAXBContext;
 	}
 	
 	public void run() {
-		Pattern eofPattern = Pattern.compile("\n\n" + (char) 23 + "\n$");
+		String messageRegex = ObjectatCommunicationStatics.getMessageRegexPattern();
+		Pattern eofPattern = Pattern.compile(messageRegex);
 		
 		try {
-			JAXBContext jaxbContext = JAXBContext.newInstance(ObjectatEvent.class);
-			Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+			Unmarshaller unmarshaller = objectatEventJAXBContext.createUnmarshaller();
 		
 			while (this.client.isConnected()) {
 				try {
@@ -41,28 +48,36 @@ public class ObjectatConnection implements Runnable {
 					do {
 						c = (char) this.client.getInputStream().read();
 						messageBuffer += c;
-					} while (c != '\n');
+					} while (c != (char) 3);
 								
 					Matcher eofMatcher = eofPattern.matcher(messageBuffer);
-				
-					if (eofMatcher.find()) {
-						messageBuffer = messageBuffer.replaceAll("^.*<?xml", "<?xml");
-						messageBuffer = messageBuffer.replaceAll("\n\n" + (char) 23 + "\n$", "");
+					boolean messageProcessed = false;
 					
-						try {
-							StringReader xmlReader = new StringReader(messageBuffer);
-							ObjectatEvent event = (ObjectatEvent) unmarshaller.unmarshal(xmlReader);
-						
-							events.addEvent(event);
-						} catch (Exception e) {
-							// TODO
-							// Do something with exception/define more specific exceptions
-							this.logger.log(ObjectatLogLevel.ERROR, "Failed to unmarshall XML: " + messageBuffer + "\n\n");
-							e.printStackTrace();
+					while (eofMatcher.find()) {
+						messageProcessed = true;
+						for (int i = 1; i <= eofMatcher.groupCount(); i++) {
+							String message = eofMatcher.group(i);
+							
+							if (message.contains("xml")) {
+								if (message.contains("objectatEvent key")) {
+									try {
+										StringReader xmlReader = new StringReader(message);
+										ObjectatEvent event = (ObjectatEvent) unmarshaller.unmarshal(xmlReader);
+										events.addEvent(event);
+									} catch (Exception e) {
+										// TODO
+										// Do something with exception/define more specific exceptions
+										this.logger.log(ObjectatLogLevel.ERROR, "Failed to unmarshall XML: " + message + "\n\n");
+										e.printStackTrace();
+									}
+								}
+							}
 						}
+					}	
 					
+					if (messageProcessed) {
 						messageBuffer = "";
-					}				
+					}
 				} catch (IOException e) {
 					// 	TODO
 					// Do something with this exception

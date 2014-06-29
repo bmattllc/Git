@@ -21,9 +21,11 @@ public class ObjectatSyntheticXMLEventGenerator implements Runnable {
 	private ObjectOutputStream out;
 	private ObjectInputStream in;
 	private String baseKey = "SyntheticEvent";
+	private JAXBContext objectatEventJAXBContext;
 	
-	public ObjectatSyntheticXMLEventGenerator (ObjectatLogger logger) {
+	public ObjectatSyntheticXMLEventGenerator (ObjectatLogger logger, JAXBContext objectatEventJAXBContext) {
 		this.logger = logger;
+		this.objectatEventJAXBContext = objectatEventJAXBContext;
 	}
 	
 	public void run() {
@@ -36,8 +38,7 @@ public class ObjectatSyntheticXMLEventGenerator implements Runnable {
 			
 			int i = 0;
 			
-			JAXBContext jaxbContext = JAXBContext.newInstance(ObjectatEvent.class);
-			Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+			Marshaller jaxbMarshaller = objectatEventJAXBContext.createMarshaller();
 			jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 			StringWriter stringWriter = new StringWriter();
 			String eventXML = "";
@@ -53,8 +54,7 @@ public class ObjectatSyntheticXMLEventGenerator implements Runnable {
 					
 					stringWriter = new StringWriter();
 					jaxbMarshaller.marshal(event, stringWriter);						
-					eventXML = stringWriter.toString() + "\n\n" + (char) 23 + "\n";
-					
+					eventXML = ObjectatCommunicationStatics.getStartOfMessage() + stringWriter.toString() + ObjectatCommunicationStatics.getEndOfMessage();
 					out.writeObject(eventXML);
 						
 					i++;

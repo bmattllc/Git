@@ -3,6 +3,7 @@ package com.brianmattllc.objectat.communication;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import javax.xml.bind.JAXBContext;
 
 import com.brianmattllc.objectat.events.*;
 import com.brianmattllc.objectat.logging.*;
@@ -16,10 +17,16 @@ public class ObjectatListener implements Runnable {
 	private ArrayList<ObjectatConnection> arrayListOfObjectatConnection = new ArrayList<ObjectatConnection>();
 	private ObjectatEvents events;
 	private ObjectatLogger logger;
+	private JAXBContext objectatEventJAXBContext;
 	
-	public ObjectatListener (ObjectatEvents events, ObjectatLogger logger) {
+	public ObjectatListener (
+			ObjectatEvents events, 
+			ObjectatLogger logger,
+			JAXBContext objectatEventJAXBContext
+	) {
 		this.events = events;
 		this.logger = logger;
+		this.objectatEventJAXBContext = objectatEventJAXBContext;
 	}
 	
 	public void run() {
@@ -33,7 +40,7 @@ public class ObjectatListener implements Runnable {
 				} else {
 					connection = serverSocket.accept();
 									
-					ObjectatConnection client = new ObjectatConnection(connection, events, logger);
+					ObjectatConnection client = new ObjectatConnection(connection, events, logger, objectatEventJAXBContext);
 					arrayListOfObjectatConnection.add(client);
 					new Thread(client).start();
 					

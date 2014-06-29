@@ -56,7 +56,6 @@ public class ObjectatEvents {
 	public synchronized boolean addEvent (ObjectatEvent event) throws Exception {
 		boolean success = false;
 		if (hashMapOfKeys.containsKey(event.getKey())) {
-			this.logger.log(ObjectatLogLevel.DEBUG, "Deduplicating event with key " + event.getKey());
 			int eventIndex = hashMapOfKeys.get(event.getKey());
 			ObjectatEvent deduplicateEvent = arrayListOfEvents.get(eventIndex);
 			
