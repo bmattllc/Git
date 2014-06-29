@@ -1,1 +1,4 @@
 /bin/
+/jaxb-api.jar
+/jaxb-impl.jar
+/jaxb-core.jar
