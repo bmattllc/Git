@@ -123,6 +123,8 @@ public class Test {
 						
 						new Thread(gen).start();
 						System.out.println("Started synthetic event generator");
+					} else if (cmdArgs[0].equals("eventStats")) {
+						System.out.println(e.getEventsStats().toString());
 					}
 				}
 			}

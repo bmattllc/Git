@@ -24,6 +24,7 @@ public class ObjectatEvents {
 	private HashMap<String,Integer> hashMapOfKeys = new HashMap<String,Integer>();
 	private ObjectatLogger logger;
 	private long eventId = 0;
+	private ObjectatEventsStats eventStats;
 	
 	public ObjectatEvents() {
 		this.init();
@@ -31,6 +32,8 @@ public class ObjectatEvents {
 	
 	public ObjectatEvents(ObjectatLogger logger) {
 		this.logger = logger;
+		eventStats = new ObjectatEventsStats(logger);
+		new Thread(eventStats).start();
 	}
 	
 	public void init() {
@@ -99,6 +102,8 @@ public class ObjectatEvents {
 			
 			success = true;
 		}
+		
+		this.eventStats.setEventsProcessed(this.eventStats.getEventsProcessed() + 1);
 		
 		return success;
 	}
@@ -197,5 +202,9 @@ public class ObjectatEvents {
 		
 		
 		return arrayListOfEvents;
+	}
+	
+	public ObjectatEventsStats getEventsStats () {
+		return this.eventStats;
 	}
 }
