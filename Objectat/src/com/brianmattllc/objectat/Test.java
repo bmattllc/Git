@@ -3,6 +3,13 @@ package com.brianmattllc.objectat;
 import com.brianmattllc.objectat.events.*;
 import java.util.ArrayList;
 import com.brianmattllc.objectat.logging.*;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+import java.io.StringWriter;
+import java.io.StringReader;
+import com.brianmattllc.objectat.communication.*;
 
 public class Test {
 	public static void main (String[] args) {
@@ -10,8 +17,30 @@ public class Test {
 		ObjectatEvents e = new ObjectatEvents(logger);
 		
 		ObjectatSyntheticEventGenerator synE = new ObjectatSyntheticEventGenerator(e, logger);
-		Thread t = new Thread(synE);
-		//t.start();
+		synE.setBaseKey("synE");
+		//new Thread(synE).start();
+		
+		ObjectatSyntheticEventGenerator synE2 = new ObjectatSyntheticEventGenerator(e, logger);
+		synE2.setBaseKey("synETWO");
+		//new Thread(synE2).start();
+		
+		ObjectatSyntheticEventGenerator synE3 = new ObjectatSyntheticEventGenerator(e, logger);
+		synE2.setBaseKey("synETHREE");
+		//new Thread(synE3).start();
+				
+		ObjectatListener listener = new ObjectatListener(e, logger);
+		new Thread(listener).start();
+		
+		ObjectatSyntheticXMLEventGenerator xmlSynE = new ObjectatSyntheticXMLEventGenerator(logger);
+		new Thread(xmlSynE).start();
+		
+		ObjectatSyntheticXMLEventGenerator xmlSynE2 = new ObjectatSyntheticXMLEventGenerator(logger);
+		xmlSynE2.setBaseKey("SyntheticEventTwo");
+		new Thread(xmlSynE2).start();
+		
+		ObjectatSyntheticXMLEventGenerator xmlSynE3 = new ObjectatSyntheticXMLEventGenerator(logger);
+		xmlSynE3.setBaseKey("SyntheticEventThree");
+		new Thread(xmlSynE3).start();
 		
 		while (true) {
 			System.out.print("> ");
@@ -78,6 +107,31 @@ public class Test {
 							event = e.getEventByKey(cmdArgs[1]);
 							System.out.println("Successfully retrieved event");
 							System.out.println(event.toString());
+						} catch (Exception ex) {
+							System.out.println("Failed to retrieve event " + ex.getMessage());
+						}
+					}
+				} else if (cmdArgs[0].equals("getXML")) {
+					if (cmdArgs[1] != null) {
+						System.out.println("Retrieving event with key " + cmdArgs[1]);
+						ObjectatEvent event = new ObjectatEvent(logger);
+						try {
+							event = e.getEventByKey(cmdArgs[1]);
+							System.out.println("Successfully retrieved event");
+							JAXBContext jaxbContext = JAXBContext.newInstance(ObjectatEvent.class);
+							Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+							jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+							StringWriter stringWriter = new StringWriter();
+							jaxbMarshaller.marshal(event, stringWriter);
+							System.out.println(stringWriter.toString());
+							
+							/*
+							Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+							StringReader stringReader = new StringReader(stringWriter.toString());
+							ObjectatEvent testEvent = (ObjectatEvent) jaxbUnmarshaller.unmarshal(stringReader);
+							testEvent.setKey(testEvent.getKey() + "Unmarshalled");
+							e.addEvent(testEvent);
+							*/
 						} catch (Exception ex) {
 							System.out.println("Failed to retrieve event " + ex.getMessage());
 						}

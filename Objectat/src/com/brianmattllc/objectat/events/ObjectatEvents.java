@@ -53,7 +53,7 @@ public class ObjectatEvents {
 		return success;
 	}
 	
-	public boolean addEvent (ObjectatEvent event) throws Exception {
+	public synchronized boolean addEvent (ObjectatEvent event) throws Exception {
 		boolean success = false;
 		if (hashMapOfKeys.containsKey(event.getKey())) {
 			this.logger.log(ObjectatLogLevel.DEBUG, "Deduplicating event with key " + event.getKey());
@@ -77,6 +77,7 @@ public class ObjectatEvents {
 			success = deduplicateEvent.deduplicate(event);
 		} else {
 			event.setFirst(new Date());
+			event.setLast(new Date());
 			long thisEventId = ++eventId;
 			event.setEventId(thisEventId);
 			int newEventIndex = arrayListOfEvents.size();
@@ -103,7 +104,7 @@ public class ObjectatEvents {
 		return success;
 	}
 	
-	public boolean removeEvent (ObjectatEvent event) throws Exception {
+	public synchronized boolean removeEvent (ObjectatEvent event) throws Exception {
 		boolean success = false;
 		
 		if (hashMapOfKeys.containsKey(event.getKey())) {

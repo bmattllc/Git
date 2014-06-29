@@ -11,6 +11,7 @@ public class ObjectatSyntheticEventGenerator implements Runnable {
 	private long minEvents = 0L;
 	private boolean removeEvents = true;
 	private ObjectatLogger logger = new ObjectatLogger(ObjectatLogLevel.FATAL);
+	private String baseKey = "SyntheticEvent";
 	
 	public ObjectatSyntheticEventGenerator (ObjectatEvents events, ObjectatLogger logger) {
 		this.events = events;
@@ -29,7 +30,7 @@ public class ObjectatSyntheticEventGenerator implements Runnable {
 			
 			if (rand % 2 == 0) {
 				ObjectatEvent event = new ObjectatEvent(logger);
-				event.setKey("SyntheticEvent" + i);
+				event.setKey(this.baseKey + i);
 				event.setEventDescription("Synthetic Event " + i);
 				event.setFirst(new java.util.Date());
 				try {
@@ -59,5 +60,13 @@ public class ObjectatSyntheticEventGenerator implements Runnable {
 				done = true;
 			}
 		}
+	}
+
+	public String getBaseKey() {
+		return baseKey;
+	}
+
+	public void setBaseKey(String baseKey) {
+		this.baseKey = baseKey;
 	}
 }

@@ -3,6 +3,10 @@ package com.brianmattllc.objectat.events;
 import java.util.Date;
 import com.brianmattllc.objectat.security.ObjectatUser;
 import com.brianmattllc.objectat.logging.*;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlAttribute;
+
 
 /**
  * @author brian
@@ -10,6 +14,7 @@ import com.brianmattllc.objectat.logging.*;
  * Event model for Objectat.  
  */
 
+@XmlRootElement
 public class ObjectatEvent {
 	private String key = "";
 	private Date first = new Date();
@@ -77,108 +82,161 @@ public class ObjectatEvent {
 	public String getKey() {
 		return key;
 	}
+	
+	@XmlAttribute
 	public void setKey(String key) {
 		this.key = key;
 	}
+	
 	public Date getFirst() {
 		return first;
 	}
+	
+	@XmlElement
 	public void setFirst(Date first) {
 		this.first = first;
 	}
+	
 	public Date getLast() {
 		return last;
 	}
+	
+	@XmlElement
 	public void setLast(Date last) {
 		this.last = last;
 	}
+	
 	public boolean isOwned() {
 		return owned;
 	}
+	
+	@XmlElement
 	public void setOwned(boolean owned) {
 		this.owned = owned;
 	}
+	
 	public ObjectatUser getOwnedBy() {
 		return ownedBy;
 	}
+	
+	@XmlElement
 	public void setOwnedBy(ObjectatUser ownedBy) {
 		this.ownedBy = ownedBy;
 	}
+	
 	public String getEventFrom() {
 		return eventFrom;
 	}
+	
+	@XmlElement
 	public void setEventFrom(String eventFrom) {
 		this.eventFrom = eventFrom;
 	}
+	
 	public String getEventSource() {
 		return eventSource;
 	}
+	
+	@XmlElement
 	public void setEventSource(String eventSource) {
 		this.eventSource = eventSource;
 	}
+	
 	public Date getEventLastChange() {
 		return eventLastChange;
 	}
+	
+	@XmlElement
 	public void setEventLastChange(Date eventLastChange) {
 		this.eventLastChange = eventLastChange;
 	}
+	
 	public ObjectatEventType getEventType() {
 		return eventType;
 	}
+	
+	@XmlElement
 	public void setEventType(ObjectatEventType eventType) {
 		this.eventType = eventType;
 	}
+	
 	public String getEventCategory() {
 		return eventCategory;
 	}
+	
+	@XmlElement
 	public void setEventCategory(String eventCategory) {
 		this.eventCategory = eventCategory;
 	}
+	
 	public String getEventGroup() {
 		return eventGroup;
 	}
+	
+	@XmlElement
 	public void setEventGroup(String eventGroup) {
 		this.eventGroup = eventGroup;
 	}
+	
 	public String getEventFromVendor() {
 		return eventFromVendor;
 	}
+	
+	@XmlElement
 	public void setEventFromVendor(String eventFromVendor) {
 		this.eventFromVendor = eventFromVendor;
 	}
+	
 	public String getEventFromModel() {
 		return eventFromModel;
 	}
+	
+	@XmlElement
 	public void setEventFromModel(String eventFromModel) {
 		this.eventFromModel = eventFromModel;
 	}
+	
 	public String getEventFromComponent() {
 		return eventFromComponent;
 	}
+	
+	@XmlElement
 	public void setEventFromComponent(String eventFromComponent) {
 		this.eventFromComponent = eventFromComponent;
 	}
+	
 	public String getEventFromComponentIdentifier() {
 		return eventFromComponentIdentifier;
 	}
+	
+	@XmlElement
 	public void setEventFromComponentIdentifier(String eventFromComponentIdentifier) {
 		this.eventFromComponentIdentifier = eventFromComponentIdentifier;
 	}
+	
 	public String getEventFromPort() {
 		return eventFromPort;
 	}
+	
+	@XmlElement
 	public void setEventFromPort(String eventFromPort) {
 		this.eventFromPort = eventFromPort;
 	}
+	
 	public String getEventDescription() {
 		return eventDescription;
 	}
+	
+	@XmlElement
 	public void setEventDescription(String eventDescription) {
 		this.eventDescription = eventDescription;
 	}
+	
 	public ObjectatEventClassification getEventClassification() {
 		return eventClassification;
 	}
+	
+	@XmlElement
 	public void setEventClassification(
 			ObjectatEventClassification eventClassification) {
 		this.eventClassification = eventClassification;
@@ -187,6 +245,8 @@ public class ObjectatEvent {
 	public ObjectatEventSeverity getEventSeverity() {
 		return eventSeverity;
 	}
+	
+	@XmlElement
 	public void setEventSeverity(ObjectatEventSeverity eventSeverity) {
 		this.eventSeverity = eventSeverity;
 	}
@@ -194,7 +254,8 @@ public class ObjectatEvent {
 	public int getEventCount() {
 		return eventCount;
 	}
-
+	
+	@XmlElement
 	public void setEventCount(int eventCount) {
 		this.eventCount = eventCount;
 	}
@@ -203,6 +264,7 @@ public class ObjectatEvent {
 		return eventId;
 	}
 
+	@XmlElement
 	public void setEventId(long eventId) {
 		this.eventId = eventId;
 	}
