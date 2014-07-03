@@ -22,6 +22,8 @@ public class ObjectatClient implements Runnable {
 	private InputStream in;
 	private boolean clientMode = false;
 	private boolean serverMode = false;
+	private ObjectatClientReader objectatClientReader = null;
+	private ObjectatClientWriter objectatClientWriter = null;
 	
 	public ObjectatClient (
 			ObjectatLogger logger,
@@ -61,6 +63,11 @@ public class ObjectatClient implements Runnable {
 			
 			if (clientMode) {
 				client = new Socket(objectatHost, objectatPort);
+				
+				objectatClientReader = new ObjectatClientReader(client.getInputStream(), this.logger);
+				objectatClientWriter = new ObjectatClientWriter(client.getOutputStream(), this.logger);
+				
+				
 				in = new ObjectInputStream(client.getInputStream());
 				out = new ObjectOutputStream(client.getOutputStream());
 				

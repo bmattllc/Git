@@ -27,6 +27,7 @@ public class ObjectatConnection implements Runnable {
 	private ObjectatLogger logger;
 	private JAXBContext objectatEventJAXBContext;
 	private boolean isEventClient = false;
+	private ObjectatMessageProcessor objectatMessageProcessor = null;
 	
 	public ObjectatConnection (
 			Socket client, 
@@ -38,6 +39,7 @@ public class ObjectatConnection implements Runnable {
 		this.events = events;
 		this.logger = logger;
 		this.objectatEventJAXBContext = objectatEventJAXBContext;
+		this.objectatMessageProcessor = new ObjectatMessageProcessor(this.logger, this.objectatEventJAXBContext);
 	}
 	
 	public void run() {
@@ -45,8 +47,6 @@ public class ObjectatConnection implements Runnable {
 		Pattern eofPattern = Pattern.compile(messageRegex);
 		
 		try {
-			Unmarshaller unmarshaller = objectatEventJAXBContext.createUnmarshaller();
-		
 			while (this.client.isConnected()) {
 				try {
 					in = this.client.getInputStream();
@@ -65,33 +65,26 @@ public class ObjectatConnection implements Runnable {
 						for (int i = 1; i <= eofMatcher.groupCount(); i++) {
 							String message = eofMatcher.group(i);
 							
-							if (message.contains("xml")) {
-								if (message.contains("objectatEvent key")) {
-									try {
-										StringReader xmlReader = new StringReader(message);
-										ObjectatEvent event = (ObjectatEvent) unmarshaller.unmarshal(xmlReader);
-										events.addEvent(event);
-									} catch (Exception e) {
-										// TODO
-										// Do something with exception/define more specific exceptions
-										this.logger.log(ObjectatLogLevel.ERROR, "Failed to unmarshall XML: " + message + "\n\n");
-										e.printStackTrace();
+							Object processedMessageObject = this.objectatMessageProcessor.processMessage(message);
+							
+							if (processedMessageObject instanceof ObjectatEvent) {
+								events.addEvent((ObjectatEvent) processedMessageObject);
+							} else {
+								if (message.equals("CLIENT")) {
+									this.isEventClient = true;
+									ArrayList<ObjectatEvent> allEvents = this.events.getAllEvents();
+									Marshaller marshaller = objectatEventJAXBContext.createMarshaller();
+									marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+									out = (ObjectOutputStream) this.client.getOutputStream();
+									for (int j = 0; j < allEvents.size(); j++) {
+										StringWriter stringWriter = new StringWriter();
+										marshaller.marshal(allEvents.get(j), stringWriter);
+										out.writeObject(
+												ObjectatCommunicationStatics.getStartOfMessage() 
+												+ stringWriter.toString() 
+												+ ObjectatCommunicationStatics.getEndOfMessage()
+										);									
 									}
-								}
-							} else if (message.equals("CLIENT")) {
-								this.isEventClient = true;
-								ArrayList<ObjectatEvent> allEvents = this.events.getAllEvents();
-								Marshaller marshaller = objectatEventJAXBContext.createMarshaller();
-								marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-								out = (ObjectOutputStream) this.client.getOutputStream();
-								for (int j = 0; j < allEvents.size(); j++) {
-									StringWriter stringWriter = new StringWriter();
-									marshaller.marshal(allEvents.get(j), stringWriter);
-									out.writeObject(
-											ObjectatCommunicationStatics.getStartOfMessage() 
-											+ stringWriter.toString() 
-											+ ObjectatCommunicationStatics.getEndOfMessage()
-									);									
 								}
 							}
 						}
