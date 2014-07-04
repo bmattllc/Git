@@ -70,7 +70,7 @@ public class ObjectatClientWriter implements Runnable {
 			}
 			
 			try {
-				Thread.sleep(10);
+				Thread.sleep(1000);
 			} catch (Exception e) {
 				done = true;
 			}
