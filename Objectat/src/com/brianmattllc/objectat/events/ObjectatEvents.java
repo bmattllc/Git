@@ -42,6 +42,10 @@ public class ObjectatEvents {
 		this.loadProperties();
 	}
 	
+	public void destroy() {
+		this.eventStats.setDone(true);
+	}
+	
 	public boolean loadProperties () {
 		boolean success = false;
 		try {

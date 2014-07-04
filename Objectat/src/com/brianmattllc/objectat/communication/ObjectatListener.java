@@ -18,6 +18,7 @@ public class ObjectatListener implements Runnable {
 	private ObjectatEvents events;
 	private ObjectatLogger logger;
 	private JAXBContext objectatEventJAXBContext;
+	private boolean done = false;
 	
 	public ObjectatListener (
 			ObjectatEvents events, 
@@ -32,8 +33,8 @@ public class ObjectatListener implements Runnable {
 	public void run() {
 		try {
 			serverSocket = new ServerSocket(listenPort, backlog);
-			boolean done = false;
-			while (!done) {
+			this.done = false;
+			while (!this.done) {
 				if (maxConnections > 0 && arrayListOfObjectatConnection.size() >= maxConnections) {
 					// TODO
 					// Add code to wait for connection to leave
@@ -57,12 +58,16 @@ public class ObjectatListener implements Runnable {
 					Thread.sleep(1000);
 				} catch (Exception e) {
 					// Interrupted, leave loop
-					done = true;
+					this.done = true;
 				}
 			}
 		} catch (IOException e) {
 			
 		}
+	}
+	
+	public void setDone (boolean done) {
+		this.done = done;
 	}
 	
 	public ArrayList<ObjectatConnection> getConnections () {

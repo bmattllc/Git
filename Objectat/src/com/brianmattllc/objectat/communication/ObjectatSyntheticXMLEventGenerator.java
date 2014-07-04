@@ -22,6 +22,7 @@ public class ObjectatSyntheticXMLEventGenerator implements Runnable {
 	private ObjectInputStream in;
 	private String baseKey = "SyntheticEvent";
 	private JAXBContext objectatEventJAXBContext;
+	private boolean done = false;
 	
 	public ObjectatSyntheticXMLEventGenerator (ObjectatLogger logger, JAXBContext objectatEventJAXBContext) {
 		this.logger = logger;
@@ -29,7 +30,7 @@ public class ObjectatSyntheticXMLEventGenerator implements Runnable {
 	}
 	
 	public void run() {
-		boolean done = false;
+		this.done = false;
 		
 		try {
 			client = new Socket(objectatHost, objectatPort);
@@ -43,8 +44,8 @@ public class ObjectatSyntheticXMLEventGenerator implements Runnable {
 			StringWriter stringWriter = new StringWriter();
 			String eventXML = "";
 			
-			while (!done) {
-				if (maxEvents > 0 && i >= maxEvents) { done = true; }
+			while (!this.done) {
+				if (maxEvents > 0 && i >= maxEvents) { this.done = true; }
 				
 				ObjectatEvent event = new ObjectatEvent(logger);
 				event.setKey(this.baseKey + i);
@@ -61,7 +62,7 @@ public class ObjectatSyntheticXMLEventGenerator implements Runnable {
 				} catch (Exception e) {
 					// 	Something went wrong, exit loop
 					e.printStackTrace();
-					done = true;
+					this.done = true;
 				}
 			
 				try {
@@ -69,12 +70,16 @@ public class ObjectatSyntheticXMLEventGenerator implements Runnable {
 					Thread.sleep(frequency);
 				} catch (Exception e) {
 					// Most likely interrupted, exit loop
-					done = true;
+					this.done = true;
 				}
 			}
 		} catch (Exception e) {
 			
 		}
+	}
+	
+	public void setDone (boolean done) {
+		this.done = done;
 	}
 
 	public String getBaseKey() {

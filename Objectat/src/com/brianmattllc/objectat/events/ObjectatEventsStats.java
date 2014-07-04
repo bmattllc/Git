@@ -21,6 +21,7 @@ public class ObjectatEventsStats implements Runnable {
 	private double maxEventsPerSecond = 0;
 	private Date maxEventsPerSecondDate = new Date();
 	private ObjectatLogger logger;
+	private boolean done = false;
 	
 	/**
 	 * Constructor for ObjectatEventsStats object.  Takes input of logger
@@ -41,9 +42,9 @@ public class ObjectatEventsStats implements Runnable {
 	 */
 	
 	public void run() {
-		boolean done = false;
+		this.done = false;
 		int onIndex = 0;
-		while (!done) {
+		while (!this.done) {
 			long eventsThisCheck = eventsProcessed - eventsLastCheck;
 		
 			if (onIndex < arrayOfEventCounts.length) {
@@ -70,7 +71,7 @@ public class ObjectatEventsStats implements Runnable {
 				// Stats collection every 10 seconds
 				Thread.sleep(10000);
 			} catch (Exception e) {
-				done = true;
+				this.done = true;
 			}
 		}
 	}
@@ -161,5 +162,9 @@ public class ObjectatEventsStats implements Runnable {
 				+ "\tMax Events Per Second Date: " + df.format(this.maxEventsPerSecondDate) + "\n"
 				+ "\tMean Events Per Second: " + this.getMeanEventsPerSecond() + "\n"
 				+ "\tCurrent Events Per Second: " + this.getCurrentEventsPerSecond() + "\n";
+	}
+	
+	public void setDone (boolean done) {
+		this.done = done;
 	}
 }

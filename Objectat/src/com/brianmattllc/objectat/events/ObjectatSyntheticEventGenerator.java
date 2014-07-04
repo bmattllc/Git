@@ -12,6 +12,7 @@ public class ObjectatSyntheticEventGenerator implements Runnable {
 	private boolean removeEvents = true;
 	private ObjectatLogger logger = new ObjectatLogger(ObjectatLogLevel.FATAL);
 	private String baseKey = "SyntheticEvent";
+	private boolean done = false;
 	
 	public ObjectatSyntheticEventGenerator (ObjectatEvents events, ObjectatLogger logger) {
 		this.events = events;
@@ -19,13 +20,13 @@ public class ObjectatSyntheticEventGenerator implements Runnable {
 	}
 	
 	public void run() {
-		boolean done = false;
+		this.done = false;
 		
 		int i = 0;
 		Random r = new Random();
 		
-		while (!done) {
-			if (maxEvents > 0 && i >= maxEvents) { done = true; }
+		while (!this.done) {
+			if (maxEvents > 0 && i >= maxEvents) { this.done = true; }
 			int rand = r.nextInt();
 			
 			if (rand % 2 == 0) {
@@ -38,7 +39,7 @@ public class ObjectatSyntheticEventGenerator implements Runnable {
 					i++;
 				} catch (Exception e) {
 					// Something went wrong, exit loop
-					done = true;
+					this.done = true;
 				}
 			} else {
 				
@@ -57,7 +58,7 @@ public class ObjectatSyntheticEventGenerator implements Runnable {
 				Thread.sleep(frequency);
 			} catch (Exception e) {
 				// Most likely interrupted, exit loop
-				done = true;
+				this.done = true;
 			}
 		}
 	}
@@ -68,5 +69,9 @@ public class ObjectatSyntheticEventGenerator implements Runnable {
 
 	public void setBaseKey(String baseKey) {
 		this.baseKey = baseKey;
+	}
+	
+	public void setDone (boolean done) {
+		this.done = done;
 	}
 }

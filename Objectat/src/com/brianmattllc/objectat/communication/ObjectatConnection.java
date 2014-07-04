@@ -31,7 +31,9 @@ public class ObjectatConnection implements Runnable {
 	private ObjectatMessageProcessor objectatMessageProcessor = null;
 	private ObjectatClientReader objectatClientReader = null;
 	private ObjectatClientWriter objectatClientWriter = null;
-	private Thread objectClientWriterThread = null;
+	private Thread objectatClientWriterThread = null;
+	private Thread objectatClientReaderThread = null;
+	private boolean done = false;
 	
 	public ObjectatConnection (
 			Socket client, 
@@ -49,8 +51,8 @@ public class ObjectatConnection implements Runnable {
 	public void run() {
 		try {
 			this.objectatClientReader = new ObjectatClientReader(this.client.getInputStream(), this.logger);
-			Thread readerThread = new Thread(this.objectatClientReader);
-			readerThread.start();
+			this.objectatClientReaderThread = new Thread(this.objectatClientReader);
+			this.objectatClientReaderThread.start();
 			
 			this.objectatClientWriter = new ObjectatClientWriter(this.client.getOutputStream(), this.logger, this.objectatEventJAXBContext);
 			
@@ -65,9 +67,9 @@ public class ObjectatConnection implements Runnable {
 							this.events.addEvent((ObjectatEvent) processedMessageObject);
 						} else {
 							if (message.equals("CLIENT")) {
-								if (objectClientWriterThread == null || !objectClientWriterThread.isAlive()) {
-									objectClientWriterThread = new Thread(this.objectatClientWriter);
-									objectClientWriterThread.start();
+								if (objectatClientWriterThread == null || !objectatClientWriterThread.isAlive()) {
+									objectatClientWriterThread = new Thread(this.objectatClientWriter);
+									objectatClientWriterThread.start();
 								}
 								
 								this.events.getArrayListOfObjectatClientWriters().add(this.objectatClientWriter);
@@ -105,6 +107,23 @@ public class ObjectatConnection implements Runnable {
 		} catch (IOException e) {
 			this.logger.log(ObjectatLogLevel.ERROR, "Failed to start reading connection.  IOException: " + e.getMessage());
 		}
+		
+		this.removeThreadFromEventsQueue();
+		this.objectatClientWriter.setDone(true);
+		this.objectatClientReader.setDone(true);
+	}
+	
+	public void removeThreadFromEventsQueue() {
+		for (int i = 0; i < this.events.getArrayListOfObjectatClientWriters().size(); i++) {
+			if (this.events.getArrayListOfObjectatClientWriters().get(i) == this.objectatClientWriter) {
+				this.events.getArrayListOfObjectatClientWriters().remove(i);
+				i--;
+			}
+		}
+	}
+	
+	public void setDone (boolean done) {
+		this.done = done;
 	}
 	
 	public Socket getClient () {

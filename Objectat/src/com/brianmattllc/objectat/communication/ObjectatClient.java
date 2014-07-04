@@ -22,6 +22,9 @@ public class ObjectatClient implements Runnable {
 	private boolean serverMode = false;
 	private ObjectatClientReader objectatClientReader = null;
 	private ObjectatClientWriter objectatClientWriter = null;
+	private Thread objectatClientReaderThread = null;
+	private Thread objectatClientWriterThread = null;
+	private boolean done = false;
 	
 	public ObjectatClient (
 			String objectatHost,
@@ -40,7 +43,7 @@ public class ObjectatClient implements Runnable {
 	}
 	
 	public void run() {
-		boolean done = false;
+		this.done = false;
 	
 		try {			
 			if (serverMode) {
@@ -48,7 +51,7 @@ public class ObjectatClient implements Runnable {
 				
 				StringWriter stringWriter = new StringWriter();
 				String eventXML = "";
-				while (!done) {
+				while (!this.done) {
 			
 				}
 			}
@@ -59,8 +62,8 @@ public class ObjectatClient implements Runnable {
 				if (this.client.isConnected()) {
 					this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Starting client reader");					
 					this.objectatClientReader = new ObjectatClientReader(this.client.getInputStream(), this.logger);
-					Thread objectatClientReaderThread = new Thread(this.objectatClientReader);
-					objectatClientReaderThread.start();
+					this.objectatClientReaderThread = new Thread(this.objectatClientReader);
+					this.objectatClientReaderThread.start();
 				
 					this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Starting client writer");
 					this.objectatClientWriter = new ObjectatClientWriter(this.client.getOutputStream(), this.logger, this.objectatEventJAXBContext);
@@ -68,7 +71,7 @@ public class ObjectatClient implements Runnable {
 					this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Sending client message");
 					this.objectatClientWriter.writeString("CLIENT");
 					
-					while (!done) {
+					while (!this.done) {
 						while (this.objectatClientReader.getBufferedMessages().size() > 0) {
 							//this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": " + this.objectatClientReader.getBufferedMessages().get(0));
 							this.objectatClientReader.getBufferedMessages().remove(0);
@@ -80,6 +83,8 @@ public class ObjectatClient implements Runnable {
 							
 						}
 					}
+					
+					this.objectatClientReader.setDone(true);
 				}
 			}
 		} catch (Exception e) {
@@ -87,5 +92,9 @@ public class ObjectatClient implements Runnable {
 			// Catch/make more specific exception
 			this.logger.log(ObjectatLogLevel.ERROR, this.getClass() + ": Exception while starting client.  Exception: " + e.getMessage());
 		}
+	}
+	
+	public void setDone (boolean done) {
+		this.done = done;
 	}
 }

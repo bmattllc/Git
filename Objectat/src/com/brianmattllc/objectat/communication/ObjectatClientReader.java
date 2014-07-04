@@ -13,6 +13,7 @@ public class ObjectatClientReader implements Runnable {
 	private ObjectatLogger logger = null;
 	private ArrayList<String> bufferedMessages = new ArrayList<String>();
 	private InputStream inputStream = null;
+	private boolean done = false;
 	
 	public ObjectatClientReader (InputStream inputStream, ObjectatLogger logger) {
 		this.logger = logger;
@@ -24,9 +25,9 @@ public class ObjectatClientReader implements Runnable {
 		String messageRegex = ObjectatCommunicationStatics.getMessageRegexPattern();
 		Pattern eofPattern = Pattern.compile(messageRegex);
 		
-		boolean done = false;
+		this.done = false;
 		
-		while (!done) {
+		while (!this.done) {
 			try {
 			
 				char c = (char) 0;
@@ -49,9 +50,13 @@ public class ObjectatClientReader implements Runnable {
 			
 			} catch (IOException e) {
 				this.logger.log(ObjectatLogLevel.ERROR, this.getClass() + ": Failed to read input stream in ObjectatClientReader. IOException: " + e.getMessage());
-				done = true;
+				this.done = true;
 			}
 		}
+	}
+	
+	public void setDone (boolean done) {
+		this.done = done;
 	}
 	
 	public ArrayList<String> getBufferedMessages () {

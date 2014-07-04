@@ -18,6 +18,7 @@ public class ObjectatClientWriter implements Runnable {
 	private ObjectatLogger logger = null;
 	private ArrayList<Object> objectQueue = new ArrayList<Object>();
 	private JAXBContext objectatEventJAXBContext;
+	private boolean done = false;
 	
 	public ObjectatClientWriter (OutputStream outputStream, ObjectatLogger logger, JAXBContext objectatEventJAXBContext) {
 		this.logger = logger;
@@ -47,9 +48,9 @@ public class ObjectatClientWriter implements Runnable {
 	}
 	
 	public void run() {
-		boolean done = false;
+		this.done = false;
 		
-		while (!done) {
+		while (!this.done) {
 			while (this.objectQueue.size() > 0) {
 				Object sendObject = this.objectQueue.get(0);
 				this.objectQueue.remove(0);
@@ -72,9 +73,13 @@ public class ObjectatClientWriter implements Runnable {
 			try {
 				Thread.sleep(1000);
 			} catch (Exception e) {
-				done = true;
+				this.done = true;
 			}
 		}
+	}
+	
+	public void setDone (boolean done) {
+		this.done = done;		
 	}
 	
 	public void addObjectToQueue (Object object) {
