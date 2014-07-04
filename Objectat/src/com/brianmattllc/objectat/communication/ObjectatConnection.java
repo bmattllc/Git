@@ -1,7 +1,8 @@
 package com.brianmattllc.objectat.communication;
 
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
+
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.Socket;
 import java.io.IOException;
@@ -20,7 +21,7 @@ import java.util.ArrayList;
 
 public class ObjectatConnection implements Runnable {
 	private Socket client;
-	private ObjectOutputStream out;
+	private OutputStream out;
 	private InputStream in;
 	private String messageBuffer = "";
 	private ObjectatEvents events;
@@ -28,6 +29,9 @@ public class ObjectatConnection implements Runnable {
 	private JAXBContext objectatEventJAXBContext;
 	private boolean isEventClient = false;
 	private ObjectatMessageProcessor objectatMessageProcessor = null;
+	private ObjectatClientReader objectatClientReader = null;
+	private ObjectatClientWriter objectatClientWriter = null;
+	private Thread objectClientWriterThread = null;
 	
 	public ObjectatConnection (
 			Socket client, 
@@ -43,64 +47,63 @@ public class ObjectatConnection implements Runnable {
 	}
 	
 	public void run() {
-		String messageRegex = ObjectatCommunicationStatics.getMessageRegexPattern();
-		Pattern eofPattern = Pattern.compile(messageRegex);
-		
 		try {
+			this.objectatClientReader = new ObjectatClientReader(this.client.getInputStream(), this.logger);
+			Thread readerThread = new Thread(this.objectatClientReader);
+			readerThread.start();
+			
+			this.objectatClientWriter = new ObjectatClientWriter(this.client.getOutputStream(), this.logger, this.objectatEventJAXBContext);
+			
 			while (this.client.isConnected()) {
-				try {
-					in = this.client.getInputStream();
-					char c = (char) 0;
-				
-					do {
-						c = (char) this.client.getInputStream().read();
-						messageBuffer += c;
-					} while (c != (char) 3);
+				String message = "";
+				while (this.objectatClientReader.getBufferedMessages().size() > 0 && (message = this.objectatClientReader.getBufferedMessages().get(0)) != null) {
+					try {
+						Object processedMessageObject = this.objectatMessageProcessor.processMessage(objectatClientReader.getBufferedMessages().get(0));
+						this.objectatClientReader.getBufferedMessages().remove(0);
+						
+						if (processedMessageObject instanceof ObjectatEvent) {
+							this.events.addEvent((ObjectatEvent) processedMessageObject);
+						} else {
+							if (message.equals("CLIENT")) {
+								if (objectClientWriterThread == null || !objectClientWriterThread.isAlive()) {
+									objectClientWriterThread = new Thread(this.objectatClientWriter);
+									objectClientWriterThread.start();
+								}
 								
-					Matcher eofMatcher = eofPattern.matcher(messageBuffer);
-					boolean messageProcessed = false;
-					
-					while (eofMatcher.find()) {
-						messageProcessed = true;
-						for (int i = 1; i <= eofMatcher.groupCount(); i++) {
-							String message = eofMatcher.group(i);
-							
-							Object processedMessageObject = this.objectatMessageProcessor.processMessage(message);
-							
-							if (processedMessageObject instanceof ObjectatEvent) {
-								events.addEvent((ObjectatEvent) processedMessageObject);
-							} else {
-								if (message.equals("CLIENT")) {
-									this.isEventClient = true;
-									ArrayList<ObjectatEvent> allEvents = this.events.getAllEvents();
-									Marshaller marshaller = objectatEventJAXBContext.createMarshaller();
-									marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-									out = (ObjectOutputStream) this.client.getOutputStream();
-									for (int j = 0; j < allEvents.size(); j++) {
-										StringWriter stringWriter = new StringWriter();
-										marshaller.marshal(allEvents.get(j), stringWriter);
-										out.writeObject(
-												ObjectatCommunicationStatics.getStartOfMessage() 
-												+ stringWriter.toString() 
-												+ ObjectatCommunicationStatics.getEndOfMessage()
-										);									
-									}
+								this.events.getArrayListOfObjectatClientWriters().add(this.objectatClientWriter);
+								this.isEventClient = true;
+								ArrayList<ObjectatEvent> allEvents = this.events.getAllEvents();
+								Marshaller marshaller = objectatEventJAXBContext.createMarshaller();
+								marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+								for (int j = 0; j < allEvents.size(); j++) {
+									StringWriter stringWriter = new StringWriter();
+									marshaller.marshal(allEvents.get(j), stringWriter);
+									String outString = ObjectatCommunicationStatics.getStartOfMessage() 
+											+ stringWriter.toString() 
+											+ ObjectatCommunicationStatics.getEndOfMessage();
+									
+									this.objectatClientWriter.writeString(outString);																	
 								}
 							}
 						}
-					}	
-					
-					if (messageProcessed) {
-						messageBuffer = "";
+					} catch (JAXBException e) {
+						this.logger.log(ObjectatLogLevel.ERROR, this.getClass() + ": Failed to process message from connection.  JAXBException: " + e.getMessage());
+					} catch (IOException e) {
+						this.logger.log(ObjectatLogLevel.ERROR, this.getClass() + ": Failed to process message from connection.  IOException: " + e.getMessage());
+					} catch (Exception e) {
+						this.logger.log(ObjectatLogLevel.ERROR, this.getClass() + ": Failed to process message from connection.  Excepion: " + e.getMessage());
 					}
-				} catch (IOException e) {
-					// 	TODO
-					// Do something with this exception
 				}
-			} 
-		} catch (Exception e) {
-			// TODO
-			// Do something with this exception
+			
+				try {
+					// Pause between iterations to preserve resources
+					Thread.sleep(10);
+				} catch (Exception e) {
+					this.logger.log(ObjectatLogLevel.ERROR, "Sleep between message processing for connection interrupted.  Exception: " + e.getMessage());
+				}
+			}
+		} catch (IOException e) {
+			this.logger.log(ObjectatLogLevel.ERROR, "Failed to start reading connection.  IOException: " + e.getMessage());
 		}
 	}
 	

@@ -1,22 +1,28 @@
 package com.brianmattllc.objectat.communication;
 
-import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.io.OutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+
 import com.brianmattllc.objectat.logging.*;
+import com.brianmattllc.objectat.events.*;
+
+import javax.xml.bind.Marshaller;
 
 public class ObjectatClientWriter implements Runnable {
-	private ObjectOutputStream objectOutputStream = null;
+	private OutputStream outputStream = null;
 	private ObjectatLogger logger = null;
+	private ArrayList<Object> objectQueue = new ArrayList<Object>();
+	private JAXBContext objectatEventJAXBContext;
 	
-	public ObjectatClientWriter (OutputStream outputStream, ObjectatLogger logger) {
+	public ObjectatClientWriter (OutputStream outputStream, ObjectatLogger logger, JAXBContext objectatEventJAXBContext) {
 		this.logger = logger;
-		
-		try {
-			this.objectOutputStream = new ObjectOutputStream(outputStream);
-		} catch (IOException e) {
-			this.logger.log(ObjectatLogLevel.FATAL, "Failed to create ObjectOutputStream for ObjectatClientWriter. IOException: " + e.getMessage());
-		}
+		this.outputStream = outputStream;
+		this.objectatEventJAXBContext = objectatEventJAXBContext; 
 	}
 	
 	public boolean writeString (String string) {
@@ -28,7 +34,9 @@ public class ObjectatClientWriter implements Runnable {
 					+ string 
 					+ ObjectatCommunicationStatics.getEndOfMessage();
 			
-			this.objectOutputStream.writeObject(string);
+			for (int i = 0; i < string.length(); i++) {
+				this.outputStream.write(string.charAt(i));
+			}
 			
 			success = true;
 		} catch (IOException e) {
@@ -39,7 +47,37 @@ public class ObjectatClientWriter implements Runnable {
 	}
 	
 	public void run() {
-		// TODO
-		// Create thread logic or remove
+		boolean done = false;
+		
+		while (!done) {
+			while (this.objectQueue.size() > 0) {
+				Object sendObject = this.objectQueue.get(0);
+				this.objectQueue.remove(0);
+				
+				if (sendObject instanceof ObjectatEvent) {
+					try {
+						Marshaller jaxbMarshaller = objectatEventJAXBContext.createMarshaller();
+						jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+						StringWriter stringWriter = new StringWriter();
+						jaxbMarshaller.marshal((ObjectatEvent) sendObject, stringWriter);
+						this.writeString(stringWriter.toString());
+					} catch (JAXBException e) {
+						this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Failed to send ObjectatEvent to client.  JAXBException: " + e.getMessage());
+					}					
+				} else {
+					this.writeString(sendObject.toString());
+				}
+			}
+			
+			try {
+				Thread.sleep(10);
+			} catch (Exception e) {
+				done = true;
+			}
+		}
+	}
+	
+	public void addObjectToQueue (Object object) {
+		this.objectQueue.add(object);
 	}
 }

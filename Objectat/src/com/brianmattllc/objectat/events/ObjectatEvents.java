@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import com.brianmattllc.objectat.logging.*;
+import com.brianmattllc.objectat.communication.*;
 
 /**
  * @author Brian Matt
@@ -25,6 +26,7 @@ public class ObjectatEvents {
 	private ObjectatLogger logger;
 	private long eventId = 0;
 	private ObjectatEventsStats eventStats;
+	private ArrayList<ObjectatClientWriter> arrayListOfObjectatClientWriters = new ArrayList<ObjectatClientWriter>();
 	
 	public ObjectatEvents() {
 		this.init();
@@ -105,6 +107,14 @@ public class ObjectatEvents {
 		
 		this.eventStats.setEventsProcessed(this.eventStats.getEventsProcessed() + 1);
 		
+		if (success) {
+			for (int i = 0; i < this.getArrayListOfObjectatClientWriters().size(); i++) {
+				this.getArrayListOfObjectatClientWriters().get(i).addObjectToQueue(
+						arrayListOfEvents.get(hashMapOfKeys.get(event.getKey()))
+				);
+			}
+		}
+		
 		return success;
 	}
 	
@@ -157,6 +167,14 @@ public class ObjectatEvents {
 			}
 		}
 		
+		if (success) {
+			for (int i = 0; i < this.getArrayListOfObjectatClientWriters().size(); i++) {
+				this.getArrayListOfObjectatClientWriters().get(i).addObjectToQueue(
+						arrayListOfEvents.get(hashMapOfKeys.get(event.getKey()))
+				);
+			}
+		}
+		
 		return success;
 	}
 	
@@ -206,5 +224,9 @@ public class ObjectatEvents {
 	
 	public ObjectatEventsStats getEventsStats () {
 		return this.eventStats;
+	}
+
+	public ArrayList<ObjectatClientWriter> getArrayListOfObjectatClientWriters() {
+		return arrayListOfObjectatClientWriters;
 	}
 }

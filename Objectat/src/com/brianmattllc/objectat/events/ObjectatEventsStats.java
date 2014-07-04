@@ -45,7 +45,6 @@ public class ObjectatEventsStats implements Runnable {
 		int onIndex = 0;
 		while (!done) {
 			long eventsThisCheck = eventsProcessed - eventsLastCheck;
-			this.logger.log(ObjectatLogLevel.DEBUG, "Events this check: " + eventsThisCheck);
 		
 			if (onIndex < arrayOfEventCounts.length) {
 				arrayOfEventCounts[onIndex] = eventsThisCheck;

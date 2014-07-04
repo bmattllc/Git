@@ -125,6 +125,12 @@ public class Test {
 						System.out.println("Started synthetic event generator");
 					} else if (cmdArgs[0].equals("eventStats")) {
 						System.out.println(e.getEventsStats().toString());
+					} else if (cmdArgs[0].equals("client")) {
+						System.out.println("Creating ObjectatClient object");
+						ObjectatClient client = new ObjectatClient("127.0.0.1", 5100, logger, objectatEventJAXBContext, true, false);
+						System.out.println("Starting ObjectatClient");
+						new Thread(client).start();
+						System.out.println("ObjectatClient started");
 					}
 				}
 			}

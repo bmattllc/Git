@@ -14,23 +14,25 @@ import com.brianmattllc.objectat.logging.*;
 
 public class ObjectatClient implements Runnable {
 	private Socket client = null;
-	private String objectatHost = "";
+	private String objectatHost = "localhost";
 	private int objectatPort = 5100;
 	private ObjectatLogger logger;
 	private JAXBContext objectatEventJAXBContext;
-	private ObjectOutputStream out;
-	private InputStream in;
 	private boolean clientMode = false;
 	private boolean serverMode = false;
 	private ObjectatClientReader objectatClientReader = null;
 	private ObjectatClientWriter objectatClientWriter = null;
 	
 	public ObjectatClient (
+			String objectatHost,
+			int objectatPort,
 			ObjectatLogger logger,
 			JAXBContext objectatEventJAXBContext,
 			boolean clientMode,
 			boolean serverMode
 	) {
+		this.objectatHost = objectatHost;
+		this.objectatPort = objectatPort;
 		this.logger = logger;
 		this.objectatEventJAXBContext = objectatEventJAXBContext;
 		this.clientMode = clientMode;
@@ -40,71 +42,50 @@ public class ObjectatClient implements Runnable {
 	public void run() {
 		boolean done = false;
 	
-		try {
-			Marshaller jaxbMarshaller = objectatEventJAXBContext.createMarshaller();
-			jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-			Unmarshaller jaxbUnmarshaller = objectatEventJAXBContext.createUnmarshaller();
-			
-			String messageRegex = ObjectatCommunicationStatics.getMessageRegexPattern();
-			Pattern messagePattern = Pattern.compile(messageRegex);
-			
+		try {			
 			if (serverMode) {
 				client = new Socket(objectatHost, objectatPort);
-		
-				out = new ObjectOutputStream(client.getOutputStream());
-			
-								StringWriter stringWriter = new StringWriter();
+				
+				StringWriter stringWriter = new StringWriter();
 				String eventXML = "";
-			
 				while (!done) {
 			
 				}
 			}
 			
 			if (clientMode) {
-				client = new Socket(objectatHost, objectatPort);
+				this.client = new Socket(objectatHost, objectatPort);
 				
-				objectatClientReader = new ObjectatClientReader(client.getInputStream(), this.logger);
-				objectatClientWriter = new ObjectatClientWriter(client.getOutputStream(), this.logger);
+				if (this.client.isConnected()) {
+					this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Starting client reader");					
+					this.objectatClientReader = new ObjectatClientReader(this.client.getInputStream(), this.logger);
+					Thread objectatClientReaderThread = new Thread(this.objectatClientReader);
+					objectatClientReaderThread.start();
 				
-				
-				in = new ObjectInputStream(client.getInputStream());
-				out = new ObjectOutputStream(client.getOutputStream());
-				
-				out.writeObject(ObjectatCommunicationStatics.getStartOfMessage() + "CLIENT" + ObjectatCommunicationStatics.getEndOfMessage());
-	
-				String messageBuffer = "";
-				
-				while (!done) {
-					char c = (char) 0;
-					do {
-						c = (char) in.read();
-						messageBuffer += c;
-					} while (c != (char) 3);
+					this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Starting client writer");
+					this.objectatClientWriter = new ObjectatClientWriter(this.client.getOutputStream(), this.logger, this.objectatEventJAXBContext);
+										
+					this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Sending client message");
+					this.objectatClientWriter.writeString("CLIENT");
 					
-					Matcher messageMatcher = messagePattern.matcher(messageBuffer);
-					boolean messageFound = false;
-					
-					if (messageMatcher.find()) {
-						messageFound = true;
+					while (!done) {
+						while (this.objectatClientReader.getBufferedMessages().size() > 0) {
+							//this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": " + this.objectatClientReader.getBufferedMessages().get(0));
+							this.objectatClientReader.getBufferedMessages().remove(0);
+						}
 						
-						for (int i = 1; i <= messageMatcher.groupCount(); i++) {
-							String message = messageMatcher.group(i);
+						try {
+							Thread.sleep(10);							
+						} catch (Exception e) {
 							
-							if (message.contains("xml")) {
-								if (message.contains("objectatEvent key")) {
-									
-								}
-							}
 						}
 					}
-					
-					if (messageFound) { messageBuffer = ""; }
 				}
 			}
 		} catch (Exception e) {
 			// TODO
 			// Catch/make more specific exception
+			this.logger.log(ObjectatLogLevel.ERROR, this.getClass() + ": Exception while starting client.  Exception: " + e.getMessage());
 		}
 	}
 }
