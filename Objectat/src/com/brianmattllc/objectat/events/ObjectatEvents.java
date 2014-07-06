@@ -3,11 +3,21 @@ package com.brianmattllc.objectat.events;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.File;
+import java.io.FileReader;
 import java.util.Properties;
 import java.util.Enumeration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 import com.brianmattllc.objectat.logging.*;
 import com.brianmattllc.objectat.communication.*;
 
@@ -18,11 +28,21 @@ import com.brianmattllc.objectat.communication.*;
  * sorting and storage.
  */
 
+@XmlRootElement
 public class ObjectatEvents {
+	private String eventsSnapshotFile = "ObjectatEvents.xml";
 	private String eventsPropertiesFile = "events.properties";
 	private Properties eventsProperties = new Properties();
+	private JAXBContext objectatEventsJAXBContext = null;
+	private Marshaller objectatEventsJAXBMarshaller = null;
+	private Unmarshaller objectatEventsJAXBUnmarshaller = null;
+	
+	@XmlElement
 	private ArrayList<ObjectatEvent> arrayListOfEvents = new ArrayList<ObjectatEvent>();
+	
+	@XmlElement
 	private HashMap<String,Integer> hashMapOfKeys = new HashMap<String,Integer>();
+	
 	private ObjectatLogger logger;
 	private long eventId = 0;
 	private ObjectatEventsStats eventStats;
@@ -36,10 +56,37 @@ public class ObjectatEvents {
 		this.logger = logger;
 		eventStats = new ObjectatEventsStats(logger);
 		new Thread(eventStats).start();
+		this.init();
 	}
 	
 	public void init() {
-		this.loadProperties();
+		//this.loadProperties();
+		
+		try {
+			this.objectatEventsJAXBContext = JAXBContext.newInstance(ObjectatEvents.class);
+			this.objectatEventsJAXBMarshaller = this.objectatEventsJAXBContext.createMarshaller();
+			this.objectatEventsJAXBMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+			
+			this.objectatEventsJAXBUnmarshaller = this.objectatEventsJAXBContext.createUnmarshaller();
+			
+			File objectatEventsDiskImage = new File(this.getEventsSnapshotFile());
+			
+			try {
+				FileReader objectatEventsFileReader = new FileReader(objectatEventsDiskImage);
+				this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Reading ObjectatEvents image from disk.");
+				
+				ObjectatEvents objectatEventsImage = (ObjectatEvents) this.objectatEventsJAXBUnmarshaller.unmarshal(objectatEventsFileReader);
+				
+				if (objectatEventsImage != null) {
+					this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Successfully unmarshalled disk image of Objectat Events.  Image contained " + objectatEventsImage.getAllEvents().size() + " event(s)");
+					this.arrayListOfEvents = objectatEventsImage.getAllEvents();					
+				}
+			} catch (FileNotFoundException e) {
+				this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": No image of ObjectatEvents found on disk.");
+			}
+		} catch (JAXBException e) {
+			this.logger.log(ObjectatLogLevel.FATAL, this.getClass() + ": Failed to get ObjectatEvents JAXB Context.  This will prevent marshalling of ObjectatEvents object and prevent snapshots from being generated.  JAXBException: " + e.getMessage());
+		}
 	}
 	
 	public void destroy() {
@@ -232,5 +279,25 @@ public class ObjectatEvents {
 
 	public ArrayList<ObjectatClientWriter> getArrayListOfObjectatClientWriters() {
 		return arrayListOfObjectatClientWriters;
+	}
+
+	public String getEventsSnapshotFile() {
+		return eventsSnapshotFile;
+	}
+
+	public void setEventsSnapshotFile(String eventsSnapshotFile) {
+		this.eventsSnapshotFile = eventsSnapshotFile;
+	}
+	
+	public synchronized boolean writeObjectatEventsToDisk () {
+		boolean success = false;
+		
+		try {
+			this.objectatEventsJAXBMarshaller.marshal(this, new File(this.getEventsSnapshotFile()));
+		} catch (JAXBException e) {
+			this.logger.log(ObjectatLogLevel.ERROR, this.getClass() + ": Failed to marshall ObjectatEvents to XML file " + this.getEventsSnapshotFile() + ".  JAXBException: " + e.getMessage());
+		}
+		
+		return success;
 	}
 }

@@ -131,6 +131,9 @@ public class Test {
 						System.out.println("Starting ObjectatClient");
 						new Thread(client).start();
 						System.out.println("ObjectatClient started");
+					} else if (cmdArgs[0].equals("writeImage")) {
+						System.out.println("Writing events to disk");
+						e.writeObjectatEventsToDisk();
 					}
 				}
 			}
