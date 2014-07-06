@@ -22,6 +22,7 @@ public class ObjectatEventsStats implements Runnable {
 	private Date maxEventsPerSecondDate = new Date();
 	private ObjectatLogger logger;
 	private boolean done = false;
+	private int eventsInObjectat = 0;
 	
 	/**
 	 * Constructor for ObjectatEventsStats object.  Takes input of logger
@@ -157,6 +158,7 @@ public class ObjectatEventsStats implements Runnable {
 		// Return string of stats
 		return "Objectat Events Stats:\n"
 				+ "\tStart Date: " + df.format(this.startDate) + "\n"
+				+ "\tEvents in Objectat: " + this.getEventsInObjectat() + "\n"
 				+ "\tEvents Processed: " + this.getEventsProcessed() + "\n"
 				+ "\tMax Events Per Second: " + this.getMaxEventsPerSecond() + "\n"
 				+ "\tMax Events Per Second Date: " + df.format(this.maxEventsPerSecondDate) + "\n"
@@ -166,5 +168,19 @@ public class ObjectatEventsStats implements Runnable {
 	
 	public void setDone (boolean done) {
 		this.done = done;
+	}
+
+	/**
+	 * @return the eventsInObjectat
+	 */
+	public int getEventsInObjectat() {
+		return eventsInObjectat;
+	}
+
+	/**
+	 * @param eventsInObjectat the eventsInObjectat to set
+	 */
+	public void setEventsInObjectat(int eventsInObjectat) {
+		this.eventsInObjectat = eventsInObjectat;
 	}
 }

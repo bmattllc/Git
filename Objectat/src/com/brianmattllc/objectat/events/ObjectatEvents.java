@@ -1,15 +1,14 @@
 package com.brianmattllc.objectat.events;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.File;
 import java.io.FileReader;
-import java.util.Properties;
-import java.util.Enumeration;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Properties;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -17,9 +16,11 @@ import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlAttribute;
 
-import com.brianmattllc.objectat.logging.*;
-import com.brianmattllc.objectat.communication.*;
+import com.brianmattllc.objectat.communication.ObjectatClientWriter;
+import com.brianmattllc.objectat.logging.ObjectatLogLevel;
+import com.brianmattllc.objectat.logging.ObjectatLogger;
 
 /**
  * @author Brian Matt
@@ -30,40 +31,52 @@ import com.brianmattllc.objectat.communication.*;
 
 @XmlRootElement
 public class ObjectatEvents {
+	private String objectatName = "Objectat";
 	private String eventsSnapshotFile = "ObjectatEvents.xml";
 	private String eventsPropertiesFile = "events.properties";
 	private Properties eventsProperties = new Properties();
 	private JAXBContext objectatEventsJAXBContext = null;
 	private Marshaller objectatEventsJAXBMarshaller = null;
 	private Unmarshaller objectatEventsJAXBUnmarshaller = null;
-	
-	@XmlElement
 	private ArrayList<ObjectatEvent> arrayListOfEvents = new ArrayList<ObjectatEvent>();
-	
-	@XmlElement
 	private HashMap<String,Integer> hashMapOfKeys = new HashMap<String,Integer>();
 	
-	private ObjectatLogger logger;
+	private ObjectatLogger logger = new ObjectatLogger(ObjectatLogLevel.ERROR);
 	private long eventId = 0;
 	private ObjectatEventsStats eventStats;
+	private Thread eventStatsThread;
 	private ArrayList<ObjectatClientWriter> arrayListOfObjectatClientWriters = new ArrayList<ObjectatClientWriter>();
+	private ObjectatEventsDiskWriter eventsDiskWriter;	
+	private Thread eventsDiskWriterThread;
 	
 	public ObjectatEvents() {
-		this.init();
+		// This constructor is called by JAXB and should only be used for 
+		// that purpose.  If used otherwise, consider calling the init method
+		// after invocation.		
 	}
 	
 	public ObjectatEvents(ObjectatLogger logger) {
 		this.logger = logger;
-		eventStats = new ObjectatEventsStats(logger);
-		new Thread(eventStats).start();
+		this.eventStats = new ObjectatEventsStats(logger);
+		this.eventStatsThread = new Thread(this.eventStats);
+		this.eventStatsThread.start();
+		
+		this.eventsDiskWriter = new ObjectatEventsDiskWriter(this, this.logger);
+		this.eventsDiskWriterThread = new Thread(this.eventsDiskWriter);
+		
+		try {
+			this.objectatEventsJAXBContext = JAXBContext.newInstance(ObjectatEvents.class);
+		} catch (JAXBException e) {
+			this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Error while creating ObjectatEvents object.  JAXBException: " + e.getMessage());
+		}
 		this.init();
 	}
 	
 	public void init() {
 		//this.loadProperties();
+		this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Initializing ObjectatEvents Object.");
 		
 		try {
-			this.objectatEventsJAXBContext = JAXBContext.newInstance(ObjectatEvents.class);
 			this.objectatEventsJAXBMarshaller = this.objectatEventsJAXBContext.createMarshaller();
 			this.objectatEventsJAXBMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 			
@@ -79,8 +92,16 @@ public class ObjectatEvents {
 				
 				if (objectatEventsImage != null) {
 					this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Successfully unmarshalled disk image of Objectat Events.  Image contained " + objectatEventsImage.getAllEvents().size() + " event(s)");
-					this.arrayListOfEvents = objectatEventsImage.getAllEvents();					
+					this.arrayListOfEvents = objectatEventsImage.getArrayListOfEvents();
+					this.hashMapOfKeys = objectatEventsImage.getHashMapOfKeys();
+					this.eventStats.setEventsInObjectat(this.getArrayListOfEvents().size());
 				}
+				
+				// Start disk writer
+				this.eventsDiskWriterThread.start();
+			} catch (JAXBException e) {
+				this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Failed to process disk image of ObjectatEvent.  JAXBException: " + e.getMessage());
+				e.printStackTrace();
 			} catch (FileNotFoundException e) {
 				this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": No image of ObjectatEvents found on disk.");
 			}
@@ -157,6 +178,7 @@ public class ObjectatEvents {
 		}
 		
 		this.eventStats.setEventsProcessed(this.eventStats.getEventsProcessed() + 1);
+		this.eventStats.setEventsInObjectat(this.getArrayListOfEvents().size());
 		
 		if (success) {
 			for (int i = 0; i < this.getArrayListOfObjectatClientWriters().size(); i++) {
@@ -217,6 +239,8 @@ public class ObjectatEvents {
 				}
 			}
 		}
+		
+		this.eventStats.setEventsInObjectat(this.getArrayListOfEvents().size());
 		
 		if (success) {
 			for (int i = 0; i < this.getArrayListOfObjectatClientWriters().size(); i++) {
@@ -290,6 +314,10 @@ public class ObjectatEvents {
 	}
 	
 	public synchronized boolean writeObjectatEventsToDisk () {
+		// TODO
+		// Write to intermediate file to prevent file corruption in the event
+		// the Objectat process is killed mid marshal
+		
 		boolean success = false;
 		
 		try {
@@ -299,5 +327,50 @@ public class ObjectatEvents {
 		}
 		
 		return success;
+	}
+
+	/**
+	 * @return the arrayListOfEvents
+	 */
+	public ArrayList<ObjectatEvent> getArrayListOfEvents() {
+		return arrayListOfEvents;
+	}
+
+	/**
+	 * @param arrayListOfEvents the arrayListOfEvents to set
+	 */
+	@XmlElement
+	public void setArrayListOfEvents(ArrayList<ObjectatEvent> arrayListOfEvents) {
+		this.arrayListOfEvents = arrayListOfEvents;
+	}
+
+	/**
+	 * @return the hashMapOfKeys
+	 */
+	public HashMap<String, Integer> getHashMapOfKeys() {
+		return hashMapOfKeys;
+	}
+
+	/**
+	 * @param hashMapOfKeys the hashMapOfKeys to set
+	 */
+	@XmlElement
+	public void setHashMapOfKeys(HashMap<String, Integer> hashMapOfKeys) {
+		this.hashMapOfKeys = hashMapOfKeys;
+	}
+
+	/**
+	 * @return the objectatName
+	 */
+	public String getObjectatName() {
+		return objectatName;
+	}
+
+	/**
+	 * @param objectatName the objectatName to set
+	 */
+	@XmlAttribute
+	public void setObjectatName(String objectatName) {
+		this.objectatName = objectatName;
 	}
 }

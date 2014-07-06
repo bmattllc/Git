@@ -18,7 +18,7 @@ public class Test {
 		
 		try {
 			JAXBContext objectatEventJAXBContext = JAXBContext.newInstance(ObjectatEvent.class);
-		
+			
 			ObjectatListener listener = new ObjectatListener(e, logger, objectatEventJAXBContext);
 			new Thread(listener).start();
 		
