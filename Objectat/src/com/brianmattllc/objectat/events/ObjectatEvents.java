@@ -96,9 +96,6 @@ public class ObjectatEvents {
 					this.hashMapOfKeys = objectatEventsImage.getHashMapOfKeys();
 					this.eventStats.setEventsInObjectat(this.getArrayListOfEvents().size());
 				}
-				
-				// Start disk writer
-				this.eventsDiskWriterThread.start();
 			} catch (JAXBException e) {
 				this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Failed to process disk image of ObjectatEvent.  JAXBException: " + e.getMessage());
 				e.printStackTrace();
@@ -108,6 +105,9 @@ public class ObjectatEvents {
 		} catch (JAXBException e) {
 			this.logger.log(ObjectatLogLevel.FATAL, this.getClass() + ": Failed to get ObjectatEvents JAXB Context.  This will prevent marshalling of ObjectatEvents object and prevent snapshots from being generated.  JAXBException: " + e.getMessage());
 		}
+		
+		// Start disk writer
+		this.eventsDiskWriterThread.start();
 	}
 	
 	public void destroy() {
@@ -321,7 +321,13 @@ public class ObjectatEvents {
 		boolean success = false;
 		
 		try {
-			this.objectatEventsJAXBMarshaller.marshal(this, new File(this.getEventsSnapshotFile()));
+			File tempFile = new File(this.getEventsSnapshotFile() + ".tmp");
+			File diskImageFile = new File(this.getEventsSnapshotFile());
+			this.objectatEventsJAXBMarshaller.marshal(this, tempFile);
+			if (diskImageFile.exists()) {
+				diskImageFile.delete();
+			}
+			tempFile.renameTo(diskImageFile);
 		} catch (JAXBException e) {
 			this.logger.log(ObjectatLogLevel.ERROR, this.getClass() + ": Failed to marshall ObjectatEvents to XML file " + this.getEventsSnapshotFile() + ".  JAXBException: " + e.getMessage());
 		}

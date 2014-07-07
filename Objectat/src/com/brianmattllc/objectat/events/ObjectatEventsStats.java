@@ -2,7 +2,7 @@ package com.brianmattllc.objectat.events;
 
 import java.util.Date;
 import java.util.TimeZone;
-import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import com.brianmattllc.objectat.logging.*;
 
 /**
@@ -151,17 +151,17 @@ public class ObjectatEventsStats implements Runnable {
 	
 	public String toString() {
 		// DateFormat object to make human friendly date
-		DateFormat df = DateFormat.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss zzz");
 		// Display times in GMT for portability
-		df.setTimeZone(TimeZone.getTimeZone("GMT"));
+		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 		
 		// Return string of stats
 		return "Objectat Events Stats:\n"
-				+ "\tStart Date: " + df.format(this.startDate) + "\n"
+				+ "\tStart Date: " + sdf.format(this.startDate) + "\n"
 				+ "\tEvents in Objectat: " + this.getEventsInObjectat() + "\n"
 				+ "\tEvents Processed: " + this.getEventsProcessed() + "\n"
 				+ "\tMax Events Per Second: " + this.getMaxEventsPerSecond() + "\n"
-				+ "\tMax Events Per Second Date: " + df.format(this.maxEventsPerSecondDate) + "\n"
+				+ "\tMax Events Per Second Date: " + sdf.format(this.maxEventsPerSecondDate) + "\n"
 				+ "\tMean Events Per Second: " + this.getMeanEventsPerSecond() + "\n"
 				+ "\tCurrent Events Per Second: " + this.getCurrentEventsPerSecond() + "\n";
 	}

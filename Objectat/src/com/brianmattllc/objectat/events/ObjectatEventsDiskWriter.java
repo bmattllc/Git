@@ -3,7 +3,7 @@ package com.brianmattllc.objectat.events;
 import com.brianmattllc.objectat.logging.*;
 
 public class ObjectatEventsDiskWriter implements Runnable {
-	private long writeFrequency = 60000;
+	private long writeFrequency = 10000;
 	private ObjectatEvents objectatEvents = null;
 	private ObjectatLogger logger = null;
 	private boolean done = false;
@@ -35,7 +35,11 @@ public class ObjectatEventsDiskWriter implements Runnable {
 				this.logger.log(ObjectatLogLevel.ERROR, this.getClass() + ": ObjectatEventDiskWriter interrupted, thread exiting.  Exception: " + e.getMessage());
 			}
 			
+			this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Writing Objectat to disk.");
+			
 			this.objectatEvents.writeObjectatEventsToDisk();
+			
+			this.logger.log(ObjectatLogLevel.DEBUG, this.getClass() + ": Objectat disk write completed.");
 		}
 	}
 	
